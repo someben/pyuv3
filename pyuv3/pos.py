@@ -100,7 +100,6 @@ class UniswapV3Position():
         sqrt_min_price = _tick_price(min_tick) ** 0.5 
         sqrt_max_price = _tick_price(max_tick) ** 0.5 
 
-        import pdb; pdb.set_trace()
         amt0, amt1 = 0, 0
         if current_tick <= min_tick:
             amt0 = np.floor(int(liquidity) * ((sqrt_max_price - sqrt_min_price) / (sqrt_min_price * sqrt_max_price)))
