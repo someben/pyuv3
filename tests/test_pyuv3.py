@@ -54,11 +54,6 @@ class Pyuv3TestCase(unittest.TestCase):
         assert pytest.approx(26630.3681, 0.001) == toks['token0']
         assert pytest.approx(16.2659, 0.001) == toks['token1']
 
-    def test_pos(self):
-        pos = UniswapV3Position(444170)
-        print(pos.get_fees())
-        print(pos.get_withdrawable_toks())
-
 
 if __name__ == '__main__':
     unittest.main()
