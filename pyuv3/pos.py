@@ -1,13 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import json
+import contextlib
 import numpy as np
-import requests
 
 from pyuv3.uint import Uint
+import pyuv3.thegraph as thegraph
+
 
 class UniswapV3Position():
+    '''
+    Represents a single live, concentrated liquidity provision position in a single
+    pool on Uniswap V3. Initialized with the position ID (i.e. NFT ID).
+    '''
 
     def __init__(self, nft_id):
         self.nft_id = nft_id
@@ -116,15 +121,15 @@ class UniswapV3Position():
             token0=adj_amt0, token1=adj_amt1,
         )   
 
-    def get_gql_query(self):
+    def get_thegraph_query(self):
         '''
         Return a comprehensive GraphQL query for the current state of this Uniswap V3 liquidity
         provision position (NFT).
         '''
         # doubling the curly brackets to get f-string interpolation
         query = f"""
-            query uniswapV3Position {{
-                position(id: "{self.nft_id}") {{
+            query uniswapV3Position($nft_id: ID!) {{
+                position(id: $nft_id) {{
                     token0 {{
                         decimals
                     }}
@@ -155,46 +160,38 @@ class UniswapV3Position():
             """
         return query
 
-    def query_thegraph(self):
-        '''
-        Call the Uniswap V3 subgraph for the current state of the liquidity provision
-        position (NFT).
-        '''
-        thegraph_endpoint = 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3'
-        query = self.get_gql_query()
-        query_resp = requests.post(thegraph_endpoint, json={ 'query': query })
-        resp = json.loads(query_resp.text)
-        pos = resp['data']['position']
+    @contextlib.contextmanager
+    def thegraph_results(self):
+        result = thegraph.query(self.get_thegraph_query(), nft_id=self.nft_id)
+        pos = result['position']
         pool = pos['pool']
-        return dict(pos=pos, pool=pool)
+        yield pos, pool
 
     def get_fees(self):
         '''
         Query this liquidity provision position (NFT) for the current fee income.
         '''
-        m = self.query_thegraph()
-        pos, pool = m['pos'], m['pool']
-        return UniswapV3Position.calc_fees(
-            pos['liquidity'],
-            pool['tick'], pos['tickLower']['tickIdx'], pos['tickUpper']['tickIdx'],
-            pool['feeGrowthGlobal0X128'], pool['feeGrowthGlobal1X128'],
-            pos['tickLower']['feeGrowthOutside0X128'], pos['tickLower']['feeGrowthOutside1X128'],
-            pos['tickUpper']['feeGrowthOutside0X128'], pos['tickUpper']['feeGrowthOutside1X128'],
-            pos['feeGrowthInside0LastX128'], pos['feeGrowthInside1LastX128'],
-            pos['token0']['decimals'], pos['token1']['decimals'],
-        )
+        with self.thegraph_results() as (pos, pool):
+            return UniswapV3Position.calc_fees(
+                pos['liquidity'],
+                pool['tick'], pos['tickLower']['tickIdx'], pos['tickUpper']['tickIdx'],
+                pool['feeGrowthGlobal0X128'], pool['feeGrowthGlobal1X128'],
+                pos['tickLower']['feeGrowthOutside0X128'], pos['tickLower']['feeGrowthOutside1X128'],
+                pos['tickUpper']['feeGrowthOutside0X128'], pos['tickUpper']['feeGrowthOutside1X128'],
+                pos['feeGrowthInside0LastX128'], pos['feeGrowthInside1LastX128'],
+                pos['token0']['decimals'], pos['token1']['decimals'],
+            )
 
     def get_withdrawable_toks(self):
         '''
         Query this liquidity provision position (NFT) for the current amount of
         withdrawable tokens.
         '''
-        m = self.query_thegraph()
-        pos, pool = m['pos'], m['pool']
-        return UniswapV3Position.calc_withdrawable_toks(
-            pos['liquidity'],
-            pool['tick'], pos['tickLower']['tickIdx'], pos['tickUpper']['tickIdx'],
-            pool['sqrtPrice'],
-            pos['token0']['decimals'], pos['token1']['decimals'],
-        )
+        with self.thegraph_results() as (pos, pool):
+            return UniswapV3Position.calc_withdrawable_toks(
+                pos['liquidity'],
+                pool['tick'], pos['tickLower']['tickIdx'], pos['tickUpper']['tickIdx'],
+                pool['sqrtPrice'],
+                pos['token0']['decimals'], pos['token1']['decimals'],
+            )
 
