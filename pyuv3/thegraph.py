@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import contextlib
+import logging
 
 import gql
 import gql.transport.requests
@@ -27,6 +28,7 @@ def query(query, **query_params):
     Call the Uniswap V3 subgraph w/ an arbitrary query.
     '''
     with thegraph_uniswapv3_client() as client:
+        logging.debug(f"Calling subgraph w/ '{query}' query & {query_params} parameters.")
         resp = client.execute(gql.gql(query), variable_values=query_params)
         return resp
 
