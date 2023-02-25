@@ -23,7 +23,7 @@ class Uint:
         self.mask = (2 ** num_bits) - 1  # 0xFFF... or 0b111...
         
     def __repr__(self):
-        return f"w{self.num}"
+        return f"uint{self.num}"
     
     def __eq__(self, o):
         return self.num == o.num
