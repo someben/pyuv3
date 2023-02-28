@@ -42,46 +42,6 @@ class FlowInt:
     def __le__(self, o): return self.num <= o.num
     def __gt__(self, o): return self.num > o.num
     def __ge__(self, o): return self.num >= o.num
-    
-    def __add__(self, o):
-        result = self.num + o.num
-        if self.is_signed:
-            if result > self.max_signed_pos:
-                return self.__class__(result - self.two_pow, num_bits=self.num_bits)
-            elif result < self.min_signed_neg:
-                return self.__class__(abs(self.num - o.num), num_bits=self.num_bits)
-            return self.__class__(result, num_bits=self.num_bits)
-        else:
-            return self.__class__(result & self.mask, num_bits=self.num_bits)
-
-    def __sub__(self, o):
-        result = self.num - o.num
-        if self.is_signed:
-            if result > self.max_signed_pos:
-                return self.__class__(result - self.two_pow, num_bits=self.num_bits)
-            elif result < self.min_signed_neg:
-                return self.__class__(abs(abs(self.num) - abs(o.num)), num_bits=self.num_bits)
-            return self.__class__(result, num_bits=self.num_bits)
-        else:
-            return self.__class__(result & self.mask, num_bits=self.num_bits)
-    
-    def __mul__(self, o):
-        result = self.num * o.num
-        if self.is_signed:
-            if result > self.max_signed_pos:
-                return self.__class__(result % self.two_pow, num_bits=self.num_bits)
-            elif result < self.min_signed_neg:
-                return self.__class__(-(abs(result) % self.two_pow), num_bits=self.num_bits)
-            return self.__class__(result, num_bits=self.num_bits)
-        else:
-            return self.__class__(result & self.mask, num_bits=self.num_bits)
-    
-    def __truediv__(self, o):
-        result = self.num // o.num
-        if self.is_signed:
-            return self.__class__(result, num_bits=self.num_bits)
-        else:
-            return self.__class__(result & self.mask, num_bits=self.num_bits)
 
 
 class IFlow(FlowInt):
@@ -96,6 +56,34 @@ class IFlow(FlowInt):
     def __repr__(self):
         return f"iflow{self.num}"
 
+    def __add__(self, o):
+        result = self.num + o.num
+        if result > self.max_signed_pos:
+            return self.__class__(result - self.two_pow, num_bits=self.num_bits)
+        elif result < self.min_signed_neg:
+            return self.__class__(abs(self.num - o.num), num_bits=self.num_bits)
+        return self.__class__(result, num_bits=self.num_bits)
+
+    def __sub__(self, o):
+        result = self.num - o.num
+        if result > self.max_signed_pos:
+            return self.__class__(result - self.two_pow, num_bits=self.num_bits)
+        elif result < self.min_signed_neg:
+            return self.__class__(abs(abs(self.num) - abs(o.num)), num_bits=self.num_bits)
+        return self.__class__(result, num_bits=self.num_bits)
+    
+    def __mul__(self, o):
+        result = self.num * o.num
+        if result > self.max_signed_pos:
+            return self.__class__(result % self.two_pow, num_bits=self.num_bits)
+        elif result < self.min_signed_neg:
+            return self.__class__(-(abs(result) % self.two_pow), num_bits=self.num_bits)
+        return self.__class__(result, num_bits=self.num_bits)
+    
+    def __truediv__(self, o):
+        result = self.num // o.num
+        return self.__class__(result, num_bits=self.num_bits)
+
 
 class UFlow(FlowInt):
     """
@@ -109,4 +97,21 @@ class UFlow(FlowInt):
     def __repr__(self):
         return f"uflow{self.num}"
    
+    def __add__(self, o):
+        result = self.num + o.num
+        return self.__class__(result & self.mask, num_bits=self.num_bits)
+
+    def __sub__(self, o):
+        result = self.num - o.num
+        return self.__class__(result & self.mask, num_bits=self.num_bits)
+    
+    def __mul__(self, o):
+        result = self.num * o.num
+        return self.__class__(result & self.mask, num_bits=self.num_bits)
+    
+    def __truediv__(self, o):
+        result = self.num // o.num
+        return self.__class__(result & self.mask, num_bits=self.num_bits)
+
+
 
