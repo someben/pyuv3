@@ -68,12 +68,12 @@ class Pyuv3TestCase(unittest.TestCase):
         self.assertEqual(IFlow(127) + IFlow(1), IFlow(-128), 'overflow')
         self.assertEqual(IFlow(-128) + IFlow(-1), IFlow(127), '(integer) underflow')
         self.assertEqual(IFlow(100) + IFlow(50), IFlow(-106), 'big overflow')
-        self.assertEqual(IFlow(-100) + IFlow(-50), IFlow(50), 'big (integer) underflow')
+        self.assertEqual(IFlow(-100) + IFlow(-50), IFlow(106), 'big (integer) underflow')
 
         self.assertEqual(IFlow(127) - IFlow(-1), IFlow(-128), 'overflow')
         self.assertEqual(IFlow(-128) - IFlow(1), IFlow(127), '(integer) underflow')
         self.assertEqual(IFlow(100) - IFlow(-50), IFlow(-106), 'big overflow')
-        self.assertEqual(IFlow(-100) - IFlow(50), IFlow(50), 'big (integer) underflow')
+        self.assertEqual(IFlow(-100) - IFlow(50), IFlow(106), 'big (integer) underflow')
 
         self.assertEqual(IFlow(13) * IFlow(0), IFlow(0))
         self.assertEqual(IFlow(-13) * IFlow(0), IFlow(0))

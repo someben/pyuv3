@@ -61,7 +61,7 @@ class IFlow(FlowInt):
         if result > self.max_signed_pos:
             return self.__class__(result - self.two_pow, num_bits=self.num_bits)
         elif result < self.min_signed_neg:
-            return self.__class__(abs(self.num - o.num), num_bits=self.num_bits)
+            return self.__class__(result + self.two_pow, num_bits=self.num_bits)
         return self.__class__(result, num_bits=self.num_bits)
 
     def __sub__(self, o):
@@ -69,7 +69,7 @@ class IFlow(FlowInt):
         if result > self.max_signed_pos:
             return self.__class__(result - self.two_pow, num_bits=self.num_bits)
         elif result < self.min_signed_neg:
-            return self.__class__(abs(abs(self.num) - abs(o.num)), num_bits=self.num_bits)
+            return self.__class__(result + self.two_pow, num_bits=self.num_bits)
         return self.__class__(result, num_bits=self.num_bits)
     
     def __mul__(self, o):
