@@ -4,22 +4,105 @@
 import pytest
 import unittest
 
+from pyuv3.pool import UniswapV3Pool
 from pyuv3.pos import UniswapV3Position
-from pyuv3.uint import Uint
+from pyuv3.flowint import IFlow, UFlow
 
 class Pyuv3TestCase(unittest.TestCase):
-    '''
-    Tests for `uint.py` unsigned integer class
-    '''
 
-    def test_uint_math(self):
-        self.assertEqual(Uint(123) + Uint(123), Uint(123 + 123))
-        self.assertEqual(Uint(123) - Uint(42), Uint(123 - 42))
-        self.assertEqual(Uint(32) * Uint(3), Uint(32 * 3))
-        self.assertEqual(Uint(255) + Uint(42), Uint(41), "overflow")
-        self.assertEqual(Uint(42) - Uint(123), Uint(256 - (123 - 42)), "(integer) underflow")
-        self.assertEqual(Uint(150) * Uint(3), Uint((150 * 3) - 256), "overflow")
-        self.assertEqual((Uint(42) * Uint(42)) / Uint(3), Uint(((42 * 42) / 3) % 256), "overflow")
+    def test_iflow_cmp(self):
+        self.assertTrue(IFlow(0) == IFlow(0))
+        self.assertTrue(IFlow(3) == IFlow(3))
+        self.assertTrue(IFlow(-2) == IFlow(-2))
+
+        self.assertTrue(IFlow(1) > IFlow(0))
+        self.assertTrue(IFlow(2) > IFlow(1))
+        self.assertTrue(IFlow(0) > IFlow(-1))
+        self.assertTrue(IFlow(-1) > IFlow(-2))
+
+        self.assertTrue(IFlow(0) < IFlow(1))
+        self.assertTrue(IFlow(1) < IFlow(2))
+        self.assertTrue(IFlow(-1) < IFlow(0))
+        self.assertTrue(IFlow(-2) < IFlow(-1))
+
+        self.assertTrue(IFlow(1) >= IFlow(0))
+        self.assertTrue(IFlow(2) >= IFlow(1))
+        self.assertTrue(IFlow(2) >= IFlow(2))
+        self.assertTrue(IFlow(0) >= IFlow(-1))
+        self.assertTrue(IFlow(-1) >= IFlow(-2))
+        self.assertTrue(IFlow(-1) >= IFlow(-1))
+
+        self.assertTrue(IFlow(0) <= IFlow(1))
+        self.assertTrue(IFlow(1) <= IFlow(2))
+        self.assertTrue(IFlow(2) <= IFlow(2))
+        self.assertTrue(IFlow(-1) <= IFlow(0))
+        self.assertTrue(IFlow(-2) <= IFlow(-1))
+        self.assertTrue(IFlow(-1) <= IFlow(-1))
+
+    def test_uflow_cmp(self):
+        self.assertTrue(UFlow(0) == UFlow(0))
+        self.assertTrue(UFlow(3) == UFlow(3))
+
+        self.assertTrue(UFlow(1) > UFlow(0))
+        self.assertTrue(UFlow(2) > UFlow(1))
+
+        self.assertTrue(UFlow(0) < UFlow(1))
+        self.assertTrue(UFlow(1) < UFlow(2))
+
+        self.assertTrue(UFlow(1) >= UFlow(0))
+        self.assertTrue(UFlow(2) >= UFlow(1))
+        self.assertTrue(UFlow(2) >= UFlow(2))
+
+        self.assertTrue(UFlow(0) <= UFlow(1))
+        self.assertTrue(UFlow(1) <= UFlow(2))
+        self.assertTrue(UFlow(2) <= UFlow(2))
+
+    def test_iflow_math(self):
+        self.assertEqual(IFlow(13) + IFlow(0), IFlow(13))
+        self.assertEqual(IFlow(13) + IFlow(7), IFlow(20))
+        self.assertEqual(IFlow(13) + IFlow(-7), IFlow(6))
+        self.assertEqual(IFlow(-13) + IFlow(0), IFlow(-13))
+        self.assertEqual(IFlow(-13) + IFlow(7), IFlow(-6))
+        self.assertEqual(IFlow(-13) + IFlow(-7), IFlow(-20))
+
+        self.assertEqual(IFlow(127) + IFlow(1), IFlow(-128), 'overflow')
+        self.assertEqual(IFlow(-128) + IFlow(-1), IFlow(127), '(integer) underflow')
+        self.assertEqual(IFlow(100) + IFlow(50), IFlow(-106), 'big overflow')
+        self.assertEqual(IFlow(-100) + IFlow(-50), IFlow(50), 'big (integer) underflow')
+
+        self.assertEqual(IFlow(127) - IFlow(-1), IFlow(-128), 'overflow')
+        self.assertEqual(IFlow(-128) - IFlow(1), IFlow(127), '(integer) underflow')
+        self.assertEqual(IFlow(100) - IFlow(-50), IFlow(-106), 'big overflow')
+        self.assertEqual(IFlow(-100) - IFlow(50), IFlow(50), 'big (integer) underflow')
+
+        self.assertEqual(IFlow(13) * IFlow(0), IFlow(0))
+        self.assertEqual(IFlow(-13) * IFlow(0), IFlow(0))
+        self.assertEqual(IFlow(13) * IFlow(1), IFlow(13))
+        self.assertEqual(IFlow(1) * IFlow(13), IFlow(13))
+
+        self.assertEqual(IFlow(13) * IFlow(3), IFlow(39))
+        self.assertEqual(IFlow(-13) * IFlow(3), IFlow(-39))
+        self.assertEqual(IFlow(13) * IFlow(-3), IFlow(-39))
+        self.assertEqual(IFlow(-13) * IFlow(-3), IFlow(39))
+
+        self.assertEqual(IFlow(110) * IFlow(3), IFlow(74), 'overflow')
+        self.assertEqual(IFlow(-110) * IFlow(3), IFlow(-74), '(integer) underflow')
+        self.assertEqual(IFlow(110) * IFlow(-3), IFlow(-74), '(integer) underflow')
+        self.assertEqual(IFlow(-110) * IFlow(-3), IFlow(74), 'overflow')
+
+        self.assertEqual(IFlow(110) / IFlow(10), IFlow(11))
+        self.assertEqual(IFlow(-110) / IFlow(10), IFlow(-11))
+        self.assertEqual(IFlow(110) / IFlow(-10), IFlow(-11))
+        self.assertEqual(IFlow(-110) / IFlow(-10), IFlow(11))
+
+    def test_uflow_math(self):
+        self.assertEqual(UFlow(123) + UFlow(123), UFlow(123 + 123))
+        self.assertEqual(UFlow(123) - UFlow(42), UFlow(123 - 42))
+        self.assertEqual(UFlow(32) * UFlow(3), UFlow(32 * 3))
+        self.assertEqual(UFlow(255) + UFlow(42), UFlow(41), 'overflow')
+        self.assertEqual(UFlow(42) - UFlow(123), UFlow(256 - (123 - 42)), '(integer) underflow')
+        self.assertEqual(UFlow(150) * UFlow(3), UFlow((150 * 3) - 256), 'overflow')
+        self.assertEqual((UFlow(42) * UFlow(42)) / UFlow(3), UFlow(((42 * 42) / 3) % 256), 'overflow')
 
     def test_calc_fees(self):
         current_tick = 202448
@@ -41,8 +124,8 @@ class Pyuv3TestCase(unittest.TestCase):
             pos_fee_growth_inside_last0, pos_fee_growth_inside_last1,
             decimals0, decimals1,
         )
-        assert pytest.approx(507.3518, 0.001) == fees['token0']
-        assert pytest.approx(0.3080, 0.001) == fees['token1']
+        self.assertTrue(pytest.approx(507.3518, 0.001) == fees['token0'])
+        self.assertTrue(pytest.approx(0.3080, 0.001) == fees['token1'])
 
     def test_calc_withdrawable_toks(self):
         liquidity = 10669196109794039
@@ -51,9 +134,19 @@ class Pyuv3TestCase(unittest.TestCase):
         min_tick, max_tick = 204290, 206870
         decimals0, decimals1 = 6, 18
         toks = UniswapV3Position.calc_withdrawable_toks(liquidity, current_tick, min_tick, max_tick, sqrt_price_x96, decimals0, decimals1)
-        assert pytest.approx(26630.3681, 0.001) == toks['token0']
-        assert pytest.approx(16.2659, 0.001) == toks['token1']
+        self.assertTrue(pytest.approx(26630.3681, 0.001) == toks['token0'])
+        self.assertTrue(pytest.approx(16.2659, 0.001) == toks['token1'])
 
+    def test_liq_net(self):
+        min_int128, max_int128 = -170141183460469231731687303715884105728, 170141183460469231731687303715884105727
+        min_uint128, max_uint128 = 0, 340282366920938463463374607431768211455
+        self.assertEqual(UniswapV3Pool.calc_liq_net(UFlow(123, num_bits=128), IFlow(123, num_bits=128)), UFlow(123 * 2, num_bits=128))
+        self.assertEqual(UniswapV3Pool.calc_liq_net(
+            UFlow(max_uint128 - 1, num_bits=128), IFlow(1, num_bits=128)),
+            UFlow(max_uint128, num_bits=128))
+        self.assertEqual(UniswapV3Pool.calc_liq_net(
+            UFlow(max_uint128 - 1, num_bits=128), IFlow(1, num_bits=128)),
+            UFlow(max_uint128, num_bits=128))
 
 if __name__ == '__main__':
     unittest.main()

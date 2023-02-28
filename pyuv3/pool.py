@@ -3,6 +3,7 @@
 
 import logging
 
+from pyuv3.flowint import IFlow, UFlow
 import pyuv3.thegraph as thegraph
 
 class UniswapV3Pool():
@@ -74,6 +75,17 @@ class UniswapV3Pool():
             liq += net_liq  # TODO handle over- and under- flow here
             liq_dist[tick_idx] = liq
         return liq_dist
+
+    def calc_liq_net(liq, dliq):
+        # porting of the 'addDelta' library function in the Solidity at:
+        # https://github.com/Uniswap/v3-core/blob/05c10bf6d547d6121622ac51c457f93775e1df09/contracts/libraries/LiquidityMath.sol
+        if dliq < IFlow(0):
+            new_liq = liq - UFlow(-dliq.num, num_bits=128)
+            assert new_liq < liq, 'LS'
+        else:  # dliq >= IFlow(0)
+            new_liq = liq + UFlow(dliq.num, num_bits=128)
+            assert new_liq >= liq, 'LA'
+        return new_liq
 
     def get_prop_liq(self, liq, at_tick):
         '''

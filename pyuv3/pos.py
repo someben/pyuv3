@@ -4,7 +4,7 @@
 import contextlib
 import numpy as np
 
-from pyuv3.uint import Uint
+from pyuv3.flowint import UFlow
 import pyuv3.thegraph as thegraph
 
 
@@ -39,21 +39,21 @@ class UniswapV3Position():
         # 𝑓𝑢 = 𝑙·(𝑓𝑟(𝑡1)−𝑓𝑟(𝑡0))
 
         # Global fee growth per liquidity '𝑓𝑔' for both token 0 and token 1
-        global_fee_growth0 = Uint(global_fee_growth0x128, num_bits=256)
-        global_fee_growth1 = Uint(global_fee_growth1x128, num_bits=256)
+        global_fee_growth0 = UFlow(global_fee_growth0x128, num_bits=256)
+        global_fee_growth1 = UFlow(global_fee_growth1x128, num_bits=256)
 
         # Fee growth outside '𝑓𝑜' of our lower tick for both token 0 and token 1
-        min_tick_fee_growth_outside0 = Uint(min_tick_fee_growth_outside0x128, num_bits=256)
-        min_tick_fee_growth_outside1 = Uint(min_tick_fee_growth_outside1x128, num_bits=256)
+        min_tick_fee_growth_outside0 = UFlow(min_tick_fee_growth_outside0x128, num_bits=256)
+        min_tick_fee_growth_outside1 = UFlow(min_tick_fee_growth_outside1x128, num_bits=256)
 
         # Fee growth outside '𝑓𝑜' of our upper tick for both token 0 and token 1
-        max_tick_fee_growth_outside0 = Uint(max_tick_fee_growth_outside0x128, num_bits=256)
-        max_tick_fee_growth_outside1 = Uint(max_tick_fee_growth_outside1x128, num_bits=256)
+        max_tick_fee_growth_outside0 = UFlow(max_tick_fee_growth_outside0x128, num_bits=256)
+        max_tick_fee_growth_outside1 = UFlow(max_tick_fee_growth_outside1x128, num_bits=256)
 
         # NOTE assume intermediate values need to over- or under-flow the same as e.g. feeGrowthGlobal
         # These are '𝑓𝑏(𝑖𝑙)' and '𝑓𝑎(𝑖𝑢)' from the formula for both token 0 and token 1
-        min_tick_fee_growth_below0, min_tick_fee_growth_below1 = Uint(0, num_bits=256), Uint(0, num_bits=256)
-        max_tick_fee_growth_above0, max_tick_fee_growth_above1 = Uint(0, num_bits=256), Uint(0, num_bits=256)
+        min_tick_fee_growth_below0, min_tick_fee_growth_below1 = UFlow(0, num_bits=256), UFlow(0, num_bits=256)
+        max_tick_fee_growth_above0, max_tick_fee_growth_above1 = UFlow(0, num_bits=256), UFlow(0, num_bits=256)
 
         # These are the calculations for '𝑓𝑎(𝑖)' from the formula for both token 0 and token 1
         if current_tick >= max_tick:
@@ -76,8 +76,8 @@ class UniswapV3Position():
         fr_t1_1 = global_fee_growth1 - min_tick_fee_growth_below1 - max_tick_fee_growth_above1
 
         # '𝑓𝑟(𝑡0)' part of the '𝑓𝑢 =𝑙·(𝑓𝑟(𝑡1)−𝑓𝑟(𝑡0))' formula for both token 0 and token 1
-        fee_growth_inside_last0 = Uint(fee_growth_inside_last0x128, num_bits=256)
-        fee_growth_inside_last1 = Uint(fee_growth_inside_last1x128, num_bits=256)
+        fee_growth_inside_last0 = UFlow(fee_growth_inside_last0x128, num_bits=256)
+        fee_growth_inside_last1 = UFlow(fee_growth_inside_last1x128, num_bits=256)
 
         # Calculations for the '𝑓𝑢 = 𝑙·(𝑓𝑟(𝑡1)−𝑓𝑟(𝑡0))' uncollected fees formula for both token 0 and token 1
         fees0 = int(liquidity) * ((fr_t1_0 - fee_growth_inside_last0).num / (2 ** 128))
