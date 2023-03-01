@@ -113,9 +113,11 @@ class UniswapV3TestCase(unittest.TestCase):
         liq = UniswapV3Position.calc_liq(2000, 1333.33, 3000, 2, 4000)
         self.assertTrue(pytest.approx(liq, 0.001) == 487.41718030204123)
 
-        liq = UniswapV3Position.calc_liq(2000, 1333.33, 3000, 2, 4000)
-        print("liq", liq)
-        self.assertTrue(pytest.approx(liq, 0.001) == 487.41718030204123)
+        # TODO confirm these liquidity calculations at the price range extremes
+        liq = UniswapV3Position.calc_liq(1333.33, 1333.33, 3000, 2, 4000)
+        self.assertTrue(pytest.approx(liq, 0.001) == 219.08820141977066)
+        liq = UniswapV3Position.calc_liq(3000, 1333.33, 3000, 2, 4000)
+        self.assertTrue(pytest.approx(liq, 0.001) == 219.08820141977066)
 
     def test_calc_fees(self):
         current_tick = 202448
