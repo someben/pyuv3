@@ -107,6 +107,16 @@ class FlowIntTestCase(unittest.TestCase):
 
 class UniswapV3TestCase(unittest.TestCase):
 
+    def test_calc_liq(self):
+        # Example 3 from the amazing Uniswap V3 liquidity math paper at:
+        # https://atiselsts.github.io/pdfs/uniswap-v3-liquidity-math.pdf
+        liq = UniswapV3Position.calc_liq(2000, 1333.33, 3000, 2, 4000)
+        self.assertTrue(pytest.approx(liq, 0.001) == 487.41718030204123)
+
+        liq = UniswapV3Position.calc_liq(2000, 1333.33, 3000, 2, 4000)
+        print("liq", liq)
+        self.assertTrue(pytest.approx(liq, 0.001) == 487.41718030204123)
+
     def test_calc_fees(self):
         current_tick = 202448
         liquidity = 34437203644513122
