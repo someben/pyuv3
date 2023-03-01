@@ -62,20 +62,21 @@ class UniswapV3Pool():
             logging.info(f"Loading ticks for '{self.addr}' pool.")
             self.ticks = sefl.get_ticks()
 
-    def calc_liq_net(liq, dliq):
+    def calc_liq_net(liq, dliq, is_allow_overflow=True):
         '''
         Update a running tally of liquidity as we iterate over ticks in a pool. This
         is a port of the addDelta() library function from the Uniswap V3 v3-core's
         LiquidityMath.sol Solidity code at:
             https://github.com/Uniswap/v3-core/blob/main/contracts/libraries/LiquidityMath.sol
         '''
-        import pdb; pdb.set_trace()
         if dliq < IFlow128(0):
-            new_liq = liq - UFlow128(-dliq.num, num_bits=128)
-            assert new_liq < liq, 'LS'
+            new_liq = liq - UFlow128(-dliq.num)
+            if not is_allow_overflow:
+                assert new_liq < liq, 'LS'
         else:  # dliq >= IFlow128(0)
-            new_liq = liq + UFlow128(dliq.num, num_bits=128)
-            assert new_liq >= liq, 'LA'
+            new_liq = liq + UFlow128(dliq.num)
+            if not is_allow_overflow:
+                assert new_liq >= liq, 'LA'
         return new_liq
 
     def get_liq_dist(self):

@@ -120,13 +120,13 @@ class UFlow(FlowInt):
         return self.__class__(result & self.mask, num_bits=self.num_bits)
 
 
-class IFlow128(UFlow):
+class IFlow128(IFlow):
     """
     Class for a common 128-bit signed integer type.
     """
 
-    def __init__(self, num):
-        super().__init__(num, is_signed=True, num_bits=128)
+    def __init__(self, num, num_bits=128):
+        super().__init__(num, num_bits=num_bits)
 
 
 class UFlow128(UFlow):
@@ -134,7 +134,7 @@ class UFlow128(UFlow):
     Class for a common 128-bit unsigned integer type.
     """
 
-    def __init__(self, num):
-        super().__init__(num, is_signed=False, num_bits=128)
+    def __init__(self, num, num_bits=128):
+        super().__init__(num, num_bits=128)
 
 
