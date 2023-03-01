@@ -8,7 +8,7 @@ from pyuv3.pool import UniswapV3Pool
 from pyuv3.pos import UniswapV3Position
 from pyuv3.flowint import IFlow, UFlow
 
-class Pyuv3TestCase(unittest.TestCase):
+class FlowIntTestCase(unittest.TestCase):
 
     def test_iflow_cmp(self):
         self.assertTrue(IFlow(0) == IFlow(0))
@@ -103,6 +103,9 @@ class Pyuv3TestCase(unittest.TestCase):
         self.assertEqual(UFlow(42) - UFlow(123), UFlow(256 - (123 - 42)), '(integer) underflow')
         self.assertEqual(UFlow(150) * UFlow(3), UFlow((150 * 3) - 256), 'overflow')
         self.assertEqual((UFlow(42) * UFlow(42)) / UFlow(3), UFlow(((42 * 42) / 3) % 256), 'overflow')
+
+
+class UniswapV3TestCase(unittest.TestCase):
 
     def test_calc_fees(self):
         current_tick = 202448

@@ -4,6 +4,7 @@
 import contextlib
 import logging
 
+import backoff
 import gql
 import gql.transport.requests
 
@@ -23,6 +24,7 @@ def thegraph_uniswapv3_client(num_retries=5):
     yield client
 
 
+@backoff.on_exception(backoff.expo, gql.transport.exceptions.TransportQueryError, max_tries=8)
 def query(query, **query_params):
     '''
     Call the Uniswap V3 subgraph w/ an arbitrary query.

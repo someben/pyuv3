@@ -32,6 +32,12 @@ class FlowInt:
         else:
             assert self.num in range(self.two_pow), f"Value {self.num} out-of-range for unsigned {num_bits:,d} bits"
         self.mask = self.two_pow - 1  # 0xFFF... or 0b111...
+
+    def __format__(self, *fmt_args):
+        '''
+        Just use the underlying Python int()'s formatting.
+        '''
+        return self.num.__format__(*fmt_args)
     
     '''
     Comparison dunders cannot overflow, so just implement these with the underlying
@@ -113,5 +119,22 @@ class UFlow(FlowInt):
         result = self.num // o.num
         return self.__class__(result & self.mask, num_bits=self.num_bits)
 
+
+class IFlow128(UFlow):
+    """
+    Class for a common 128-bit signed integer type.
+    """
+
+    def __init__(self, num):
+        super().__init__(num, is_signed=True, num_bits=128)
+
+
+class UFlow128(UFlow):
+    """
+    Class for a common 128-bit unsigned integer type.
+    """
+
+    def __init__(self, num):
+        super().__init__(num, is_signed=False, num_bits=128)
 
 
