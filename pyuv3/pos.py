@@ -4,6 +4,7 @@
 import contextlib
 import numpy as np
 
+import pyuv3
 from pyuv3.flowint import UFlow
 import pyuv3.thegraph as thegraph
 
@@ -17,21 +18,17 @@ class UniswapV3Position():
     def __init__(self, nft_id):
         self.nft_id = nft_id
 
-    def calc_tick_price(tick):
-        return 1.0001 ** int(tick)
-
-    def calc_price_tick(price):
-        return int(np.floor(np.log(price) / np.log(1.0001)))
-
-    def calc_liq(price, min_price, max_price, amt0, amt1):
+    def calc_liq(tick, min_tick, max_tick, amt0, amt1):
         '''
         Calculate the (virtual) liquidity for a concentrated liquidity provision
         position, the L variable used throughout the white papers.
         '''
-        sqrt_price, sqrt_min_price, sqrt_max_price = price ** 0.5, min_price ** 0.5, max_price ** 0.5
-        if price <= min_price:
+
+        sqrt_price, sqrt_min_price, sqrt_max_price = \
+            [pyuv3.calc_tick_price(x) ** 0.5 for x in [tick, min_tick, max_tick]]
+        if tick <= min_tick:
             return amt0 * ((sqrt_min_price * sqrt_max_price) / (sqrt_max_price - sqrt_min_price))
-        elif price >= max_price:
+        elif tick >= max_tick:
             return amt1 / (sqrt_max_price - sqrt_min_price)
         else:
             liq0 = amt0 * ((sqrt_price * sqrt_max_price) / (sqrt_max_price - sqrt_price))
@@ -119,8 +116,8 @@ class UniswapV3Position():
         with @Crypto_Rachel on #dev-chat on Uniswap.
         '''
         sqrt_price = int(sqrt_price_x96) / (2 ** 96) 
-        sqrt_min_price = UniswapV3Position.calc_tick_price(min_tick) ** 0.5
-        sqrt_max_price = UniswapV3Position.calc_tick_price(max_tick) ** 0.5
+        sqrt_min_price = pyuv3.calc_tick_price(min_tick) ** 0.5
+        sqrt_max_price = pyuv3.calc_tick_price(max_tick) ** 0.5
 
         amt0, amt1 = 0, 0
         if current_tick <= min_tick:

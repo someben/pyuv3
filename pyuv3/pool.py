@@ -3,6 +3,9 @@
 
 import logging
 
+import pandas as pd
+
+import pyuv3.base
 from pyuv3.flowint import IFlow128, UFlow128
 import pyuv3.thegraph as thegraph
 
@@ -20,6 +23,32 @@ class UniswapV3Pool():
         '''
         self.addr = addr
         self.ticks = ticks
+
+    def get_thegraph_state_query(self):
+        '''
+        Return a GraphQL query for pool-level state, settings and configuation.
+        '''
+        # doubling the curly brackets to get f-string interpolation
+        query = f"""
+            query uniswapV3Pool($pool_id: ID!) {{
+                pool(id: $pool_id) {{
+                    tick
+                    token0 {{
+                        symbol
+                        decimals
+                    }}
+                    token1 {{
+                        symbol
+                        decimals
+                    }}
+                }}
+            }}
+        """
+        return query
+
+    def get_state(self):
+        result = thegraph.query(self.get_thegraph_state_query(), pool_id=self.addr)
+        return result['pool']
 
     def get_thegraph_tick_query(self):
         '''
@@ -93,14 +122,47 @@ class UniswapV3Pool():
             logging.debug(f"Liquidity delta {dliq:+d} at {tick_idx:d} tick index, {liq:d} running liquidity.")
             liq = UniswapV3Pool.calc_liq_net(liq, dliq)
             liq_dist[tick_idx] = liq
+        assert liq == UFlow128(0), "Total liquidity in pool does not net to zero"
         return liq_dist
 
-    def get_prop_liq(self, liq, at_tick):
+    def get_adj_price_tick(self, adj_price):
+        state = self.get_state()
+        decimals0, decimals1 = int(state['token0']['decimals']), int(state['token1']['decimals'])
+        return pyuv3.base.calc_adj_price_tick(adj_price, decimals0, decimals1)
+
+    def get_inv_adj_price_tick(self, inv_adj_price):
+        state = self.get_state()
+        decimals0, decimals1 = int(state['token0']['decimals']), int(state['token1']['decimals'])
+        return pyuv3.base.calc_inv_adj_price_tick(inv_adj_price, decimals0, decimals1)
+
+    def get_tick_adj_price(self, tick):
+        state = self.get_state()
+        decimals0, decimals1 = int(state['token0']['decimals']), int(state['token1']['decimals'])
+        return pyuv3.base.calc_tick_adj_price(tick, decimals0, decimals1)
+
+    def get_tick_inv_adj_price(self, tick):
+        state = self.get_state()
+        decimals0, decimals1 = int(state['token0']['decimals']), int(state['token1']['decimals'])
+        return pyuv3.base.calc_tick_inv_adj_price(tick, decimals0, decimals1)
+
+    def get_prop_liq(self, current_inv_price, min_inv_price, max_inv_price, amt0, amt1):
         '''
         Query for what proportion of the pool's liquidity would be provided
         by the passed liquidity number. Used to estimate the amount of fee
         income earned by a position in a pool.
         '''
         self.ensure_ticks()
-        return None
+        current_tick = self.get_inv_adj_price_tick(current_inv_price)
+        liq = pyuv3.pos.UniswapV3Position.calc_liq(
+            current_tick,
+            self.get_inv_adj_price_tick(max_inv_price),  # reversed, because inverse
+            self.get_inv_adj_price_tick(min_inv_price),
+            amt0,
+            amt1,
+        )
+
+        pool_liq_dist_vec = pd.Series(self.get_liq_dist()).sort_index()
+        pool_liq = pool_liq_dist_vec.loc[:current_tick].iloc[-1]
+        prop_liq = liq / pool_liq.num
+        return prop_liq
 

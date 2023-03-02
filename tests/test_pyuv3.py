@@ -4,6 +4,7 @@
 import pytest
 import unittest
 
+import pyuv3
 from pyuv3.pool import UniswapV3Pool
 from pyuv3.pos import UniswapV3Position
 from pyuv3.flowint import IFlow, UFlow
@@ -107,16 +108,26 @@ class FlowIntTestCase(unittest.TestCase):
 
 class UniswapV3TestCase(unittest.TestCase):
 
+    def test_base(self):
+        price = 1669.95
+        inv_price = 1.0 / price
+        adj_inv_price = inv_price * (10 ** 12)
+        self.assertEqual(pyuv3.calc_price_tick(adj_inv_price), 202114)
+        self.assertTrue(pytest.approx(pyuv3.calc_tick_price(202114), 0.0001) == adj_inv_price)
+
     def test_calc_liq(self):
         # Example 3 from the amazing Uniswap V3 liquidity math paper at:
         # https://atiselsts.github.io/pdfs/uniswap-v3-liquidity-math.pdf
-        liq = UniswapV3Position.calc_liq(2000, 1333.33, 3000, 2, 4000)
+        liq = UniswapV3Position.calc_liq(
+            pyuv3.calc_price_tick(2000), pyuv3.calc_price_tick(1333.33), pyuv3.calc_price_tick(3000), 2, 4000)
         self.assertTrue(pytest.approx(liq, 0.001) == 487.41718030204123)
 
         # TODO confirm these liquidity calculations at the price range extremes
-        liq = UniswapV3Position.calc_liq(1333.33, 1333.33, 3000, 2, 4000)
+        liq = UniswapV3Position.calc_liq(
+            pyuv3.calc_price_tick(1333.33), pyuv3.calc_price_tick(1333.33), pyuv3.calc_price_tick(3000), 2, 4000)
         self.assertTrue(pytest.approx(liq, 0.001) == 219.08820141977066)
-        liq = UniswapV3Position.calc_liq(3000, 1333.33, 3000, 2, 4000)
+        liq = UniswapV3Position.calc_liq(
+            pyuv3.calc_price_tick(3000), pyuv3.calc_price_tick(1333.33), pyuv3.calc_price_tick(3000), 2, 4000)
         self.assertTrue(pytest.approx(liq, 0.001) == 219.08820141977066)
 
     def test_calc_fees(self):
