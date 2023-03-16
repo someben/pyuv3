@@ -209,3 +209,13 @@ class UniswapV3Position():
                 pos['token0']['decimals'], pos['token1']['decimals'],
             )
 
+    def calc_amt1(price, min_price, max_price, amt0):
+        '''
+        Given an amount of token0 and a desired liquidity provision range, calculate
+        the amount of token1 needed in order to provide liquidity at that range.
+        '''
+        sqrt_price, sqrt_min_price, sqrt_max_price = [p ** 0.5 for p in [price, min_price, max_price]]
+        top_liq = amt0 * ((sqrt_price * sqrt_max_price) / (sqrt_max_price - sqrt_price))
+        amt1 = top_liq * (sqrt_price - sqrt_min_price)
+        return amt1
+

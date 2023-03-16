@@ -26,7 +26,7 @@ def calc_tick_adj_price(tick, decimals0, decimals1):
 
 def calc_tick_inv_adj_price(tick, decimals0, decimals1):
     '''
-    Human readable, adjusted inver seprice at a certain signed-integer tick.
+    Human readable, adjusted inverse seprice at a certain signed-integer tick.
     This accounts for the decimal powers of two towens in a pool.
     '''
     return 1.0 / calc_tick_adj_price(tick, decimals0, decimals1)

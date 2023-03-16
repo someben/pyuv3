@@ -23,6 +23,7 @@ class UniswapV3Pool():
         '''
         self.addr = addr
         self.ticks = ticks
+        self.liq_dist = None
 
     def get_thegraph_state_query(self):
         '''
@@ -33,6 +34,7 @@ class UniswapV3Pool():
             query uniswapV3Pool($pool_id: ID!) {{
                 pool(id: $pool_id) {{
                     tick
+                    liquidity
                     token0 {{
                         symbol
                         decimals
@@ -47,6 +49,9 @@ class UniswapV3Pool():
         return query
 
     def get_state(self):
+        '''
+        Return the live state of a pool, the current tick and token settings.
+        '''
         result = thegraph.query(self.get_thegraph_state_query(), pool_id=self.addr)
         return result['pool']
 
@@ -67,6 +72,11 @@ class UniswapV3Pool():
         return query
 
     def get_ticks(self, max_num_pages=99):
+        '''
+        Return the live distribution of liquidity in a pool, by querying all
+        the "ticks" and calculating the running liquidity from the deltas
+        of liquidity (liquidityNet).
+        '''
         ticks = {}
         num_skip = 0
         for _ in range(max_num_pages):
@@ -89,7 +99,7 @@ class UniswapV3Pool():
         '''
         if self.ticks == None:
             logging.info(f"Loading ticks for '{self.addr}' pool.")
-            self.ticks = sefl.get_ticks()
+            self.ticks = self.get_ticks()
 
     def calc_liq_net(liq, dliq, is_allow_overflow=True):
         '''
@@ -125,6 +135,17 @@ class UniswapV3Pool():
         assert liq == UFlow128(0), "Total liquidity in pool does not net to zero"
         return liq_dist
 
+    def ensure_liq_dist(self):
+        '''
+        Ensure that the potentially-large distribution of liquidity in the pool
+        has been loaded from the subgraph. Only to be called once per instantiation
+        of the pool.
+        '''
+        self.ensure_ticks()  # depends on the ticks
+        if self.liq_dist == None:
+            logging.info(f"Loading liquidity distribution for '{self.addr}' pool.")
+            self.liq_dist = self.get_liq_dist()
+
     def get_adj_price_tick(self, adj_price):
         state = self.get_state()
         decimals0, decimals1 = int(state['token0']['decimals']), int(state['token1']['decimals'])
@@ -145,24 +166,29 @@ class UniswapV3Pool():
         decimals0, decimals1 = int(state['token0']['decimals']), int(state['token1']['decimals'])
         return pyuv3.base.calc_tick_inv_adj_price(tick, decimals0, decimals1)
 
-    def get_prop_liq(self, current_inv_price, min_inv_price, max_inv_price, amt0, amt1):
+    def get_current_inv_adj_price(self):
+        state = self.get_state()
+        current_tick = state['tick']
+        return self.get_tick_inv_adj_price(current_tick)
+
+    def get_inv_prop_liq(self, current_inv_price, min_inv_price, max_inv_price, amt0, amt1):
         '''
         Query for what proportion of the pool's liquidity would be provided
         by the passed liquidity number. Used to estimate the amount of fee
         income earned by a position in a pool.
         '''
-        self.ensure_ticks()
+        self.ensure_liq_dist()
         current_tick = self.get_inv_adj_price_tick(current_inv_price)
-        liq = pyuv3.pos.UniswapV3Position.calc_liq(
-            current_tick,
-            self.get_inv_adj_price_tick(max_inv_price),  # reversed, because inverse
-            self.get_inv_adj_price_tick(min_inv_price),
-            amt0,
-            amt1,
-        )
+        min_tick, max_tick = self.get_inv_adj_price_tick(min_inv_price), self.get_inv_adj_price_tick(max_inv_price)
+        min_tick, max_tick = max_tick, min_tick  # reversing the range, given inverse pricing
 
-        pool_liq_dist_vec = pd.Series(self.get_liq_dist()).sort_index()
+        liq = pyuv3.pos.UniswapV3Position.calc_liq(current_tick, min_tick, max_tick, amt0, amt1)
+        liq *= (10 ** (18 - 6))
+        logging.debug(f"Calculated {liq:0.6f} liquidity for {min_tick} to {max_tick}, w/ {current_tick} current tick, {amt0} & {amt1} token amounts.")
+
+        pool_liq_dist_vec = pd.Series(self.liq_dist).sort_index()
         pool_liq = pool_liq_dist_vec.loc[:current_tick].iloc[-1]
-        prop_liq = liq / pool_liq.num
+        prop_liq = liq / (pool_liq.num + liq)
+        logging.debug(f"Pulled {pool_liq.num:6d} pool liquidity at {current_tick} tick, for {prop_liq:0.12%} proportion.")
         return prop_liq
 

@@ -155,8 +155,8 @@ class UniswapV3TestCase(unittest.TestCase):
 
     def test_calc_withdrawable_toks(self):
         liquidity = 10669196109794039
-        sqrt_price_x96 = 2282306120221836809729201765714520
         current_tick = 205377
+        sqrt_price_x96 = (pyuv3.calc_tick_price(current_tick) ** 0.5) * (2 ** 96)
         min_tick, max_tick = 204290, 206870
         decimals0, decimals1 = 6, 18
         toks = UniswapV3Position.calc_withdrawable_toks(liquidity, current_tick, min_tick, max_tick, sqrt_price_x96, decimals0, decimals1)
@@ -173,6 +173,11 @@ class UniswapV3TestCase(unittest.TestCase):
         self.assertEqual(UniswapV3Pool.calc_liq_net(
             UFlow(max_uint128 - 1, num_bits=128), IFlow(1, num_bits=128)),
             UFlow(max_uint128, num_bits=128))
+
+    def test_calc_amt1(self):
+        amt1 = UniswapV3Position.calc_amt1(2000, 1500, 2500, 2)
+        self.assertTrue(pytest.approx(5076.10, 0.01) == amt1)
+        
 
 if __name__ == '__main__':
     unittest.main()
