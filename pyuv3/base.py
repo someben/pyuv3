@@ -21,7 +21,7 @@ def calc_tick_adj_price(tick, decimals0, decimals1):
     accounts for the decimal powers of two towens in a pool.
     '''
     price = calc_tick_price(tick)
-    return price * (10 ** (decimals0 - decimals1))
+    return price * (10 ** (int(decimals0) - int(decimals1)))
 
 
 def calc_tick_inv_adj_price(tick, decimals0, decimals1):
@@ -38,7 +38,7 @@ def calc_price_tick(price):
     prices, which have not been scaled by the difference between the decimal
     powers of the two tokens in a pool.
     '''
-    return int(np.floor(np.log(price) / np.log(1.0001)))
+    return int(np.floor(np.log(float(price)) / np.log(1.0001)))
 
 
 def calc_adj_price_tick(adj_price, decimals0, decimals1):
@@ -46,7 +46,7 @@ def calc_adj_price_tick(adj_price, decimals0, decimals1):
     Tick index for an adjusted price, as a signed integer. This can be called
     with a human readable price and the decimal scaling of a pool.
     '''
-    price = adj_price * (10 ** (decimals1 - decimals0))
+    price = adj_price * (10 ** (int(decimals1) - int(decimals0)))
     return calc_price_tick(price)
 
 
@@ -58,4 +58,15 @@ def calc_inv_adj_price_tick(inv_adj_price, decimals0, decimals1):
     '''
     return calc_adj_price_tick(1.0 / inv_adj_price, decimals0, decimals1)
 
+
+def calc_fee_tier_tick_spacing(fee_tier):
+    '''
+    Calculate the spacing between activate-able ticks based upon the fee tier
+    of a pool.
+    '''
+    return {
+        500: 10,
+        3000: 60,
+        10000: 200,
+    }[int(fee_tier)]
 

@@ -34,6 +34,8 @@ class UniswapV3Pool():
             query uniswapV3Pool($pool_id: ID!) {{
                 pool(id: $pool_id) {{
                     tick
+                    feeTier
+                    sqrtPrice
                     liquidity
                     token0 {{
                         symbol
@@ -171,24 +173,27 @@ class UniswapV3Pool():
         current_tick = state['tick']
         return self.get_tick_inv_adj_price(current_tick)
 
-    def get_inv_prop_liq(self, current_inv_price, min_inv_price, max_inv_price, amt0, amt1):
+    def get_inv_prop_liq(self, at_price, min_price, max_price, amt0, amt1):
         '''
-        Query for what proportion of the pool's liquidity would be provided
-        by the passed liquidity number. Used to estimate the amount of fee
-        income earned by a position in a pool.
+        Calculate the proportion of liquidity in the pool that would be provided
+        bv the passed in liquidity provisiion position. Used to estimate the amount
+        of fee income that would be earner by a position in a pool.
         '''
         self.ensure_liq_dist()
-        current_tick = self.get_inv_adj_price_tick(current_inv_price)
-        min_tick, max_tick = self.get_inv_adj_price_tick(min_inv_price), self.get_inv_adj_price_tick(max_inv_price)
-        min_tick, max_tick = max_tick, min_tick  # reversing the range, given inverse pricing
 
-        liq = pyuv3.pos.UniswapV3Position.calc_liq(current_tick, min_tick, max_tick, amt0, amt1)
-        liq *= (10 ** (18 - 6))
-        logging.debug(f"Calculated {liq:0.6f} liquidity for {min_tick} to {max_tick}, w/ {current_tick} current tick, {amt0} & {amt1} token amounts.")
+        state = self.get_state()
+        # inverted!
+        decimals0, decimals1 = int(state['token0']['decimals']), int(state['token1']['decimals'])
+        at_tick = pyuv3.calc_inv_adj_price_tick(at_price, decimals0, decimals1)
+        min_tick = pyuv3.calc_inv_adj_price_tick(max_price, decimals0, decimals1)  # inverted
+        max_tick = pyuv3.calc_inv_adj_price_tick(min_price, decimals0, decimals1)  # inverted
 
-        pool_liq_dist_vec = pd.Series(self.liq_dist).sort_index()
-        pool_liq = pool_liq_dist_vec.loc[:current_tick].iloc[-1]
-        prop_liq = liq / (pool_liq.num + liq)
-        logging.debug(f"Pulled {pool_liq.num:6d} pool liquidity at {current_tick} tick, for {prop_liq:0.12%} proportion.")
+        pos_liq = pyuv3.pos.UniswapV3Position.calc_liq(at_tick, min_tick, max_tick, amt0 * (10 ** decimals0), amt1 * (10 ** decimals1))
+        logging.debug(f"Calculated {pos_liq:0.6f} liquidity for {min_tick} to {max_tick}, at {at_tick} tick, {amt0} & {amt1} token amounts.")
+
+        liq_dist_vec = pd.Series(self.liq_dist).sort_index()
+        liq = liq_dist_vec.loc[:at_tick].iloc[-1]
+
+        prop_liq = pos_liq / (liq.num + pos_liq)
         return prop_liq
 
