@@ -7,6 +7,7 @@ import pandas as pd
 
 import pyuv3.base
 from pyuv3.flowint import IFlow128, UFlow128
+import pyuv3.pos
 import pyuv3.thegraph as thegraph
 
 class UniswapV3Pool():
